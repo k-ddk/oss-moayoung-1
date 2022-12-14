@@ -94,29 +94,30 @@ function Mobile() {
   );
 }
 function faceRelocateVoice() {
-  if (app.faceDetectionState == -1) {
+  if (app.faceDetectionState == 0) speech('정상 범위에 들어왔습니다.');
+  else if (app.faceDetectionState == -1) {
     if (Mobile()) {
-      speech('이탈. 핸드폰을 위로 움직이세요.');
+      speech('이탈. 휴대폰을 위쪽으로 움직이세요.');
     } else {
-      speech('이탈. 아래쪽으로 이동하시오.');
+      speech('이탈. 아래쪽으로 이동하세요.');
     }
   } else if (app.faceDetectionState == -2) {
     if (Mobile()) {
-      speech('이탈. 핸드폰을 아래로 움직이세요.');
+      speech('이탈. 휴대폰을 아래쪽으로 움직이세요.');
     } else {
-      speech('이탈. 위쪽으로 이동하시오.');
+      speech('이탈. 위쪽으로 이동하세요.');
     }
   } else if (app.faceDetectionState == -3) {
     if (Mobile()) {
-      speech('이탈. 핸드폰을 오른쪽으로 움직이세요.');
+      speech('이탈. 휴대폰을 오른쪽으로 움직이세요.');
     } else {
-      speech('이탈. 왼쪽으로 이동하시오.');
+      speech('이탈. 왼쪽으로 이동하세요.');
     }
   } else if (app.faceDetectionState == -4) {
     if (Mobile()) {
-      speech('이탈. 핸드폰을 왼쪽으로 움직이세요.');
+      speech('이탈. 휴대폰을 왼쪽으로 움직이세요.');
     } else {
-      speech('이탈. 오른쪽으로 이동하시오.');
+      speech('이탈. 오른쪽으로 이동하세요.');
     }
   }
 
@@ -173,7 +174,8 @@ export class App {
   faceRight: number;
   faceUp: number;
   faceDown: number;
-  isStartFaceDetect: boolean;
+  isFaceDetectStart: boolean;
+  isFaceDetectStartSpeaking: boolean = false;
   isFaceDetectionSet: boolean = false;
   faceDetectionState: any = -99;
   faceDetectionStateCount: any;
@@ -250,7 +252,7 @@ export class App {
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
     });
-    this.isStartFaceDetect = true;
+    this.isFaceDetectStart = true;
 
     this.featureOnOffVueObject = new Vue({
       el: '#settingSwitch',
@@ -260,7 +262,8 @@ export class App {
       methods: {
         isFaceDetect: function () {
           app.faceDetectionStateCount = 0;
-          app.isStartFaceDetect = true;
+          app.isFaceDetectStart = true;
+          app.isFaceDetectStartSpeaking = false;
 
           app.myHands.onResults(onResultsOnHands);
           app.myFaceMesh.onResults(onResultsOnFaceMesh);
@@ -276,7 +279,9 @@ export class App {
               ) {
                 app.faceDetectionState = 1;
                 console.log('Face Detection On');
-                speech('얼굴 인식 기능이 켜졌습니다. 잠시만 기다려주세요.');
+                speech(
+                  '얼굴 벗어남 감지 기능이 켜졌습니다. 잠시만 기다려주세요.'
+                );
               }
               if (app.fisrtFaceDetection) {
                 app.fisrtFaceDetection = false;
@@ -291,16 +296,20 @@ export class App {
               } else if (app.isFaceDetectionSet) {
                 //얼굴인식 세팅이 완료된 상태
                 if (
-                  app.isStartFaceDetect &&
+                  app.isFaceDetectStart &&
                   ((app.isInWaitroom && app.waitroomCameraOn) ||
                     (!app.isInWaitroom && app.camerastate)) &&
                   $(document.getElementById('faceDetect')).prop('checked') ==
                     true
                 ) {
-                  app.isStartFaceDetect = false;
-                  speech('얼굴인식을 시작합니다.');
+                  app.isFaceDetectStart = false;
+                  app.isFaceDetectStartSpeaking = true;
+                  speech('얼굴 인식을 시작합니다.');
+                  setTimeout(function () {
+                    app.isFaceDetectStartSpeaking = false;
+                  }, 5000);
+                  app.faceDetectionState = 1;
                 }
-
                 if (app.isInWaitroom) {
                   // 현재의 방에 따라 비디오 바꿔주기
                   var face_input = document.getElementById(
@@ -322,7 +331,7 @@ export class App {
                       window.speechSynthesis.cancel();
                       console.log('Video Loading...');
                       count++;
-                      if (count == 15) {
+                      if (count == 17) {
                         clearInterval(app.videoLoadingInterval);
                         app.isVideoLoading = false;
                         console.log('Video Loading Complete');
@@ -378,36 +387,36 @@ export class App {
                 if (app.faceDetectionState !== -1) {
                   if (
                     app.faceDetectionState !== 1 ||
-                    !app.isHandDetectionSpeaking
+                    !app.isHandDetectionSpeaking ||
+                    !app.isFaceDetectStartSpeaking
                   )
                     window.speechSynthesis.cancel();
                   app.faceDetectionState = -1;
-                  speech('이탈. 아래쪽으로 이동하시오.');
-                  app.faceDetectionStateCount = 0;
+                  faceRelocateVoice();
                 } else app.faceDetectionStateCount++;
               } else if (results.multiFaceLandmarks[0][152].y >= app.faceDown) {
                 console.log('Face Out Direction: Down');
                 if (app.faceDetectionState !== -2) {
                   if (
                     app.faceDetectionState !== 1 ||
-                    !app.isHandDetectionSpeaking
+                    !app.isHandDetectionSpeaking ||
+                    !app.isFaceDetectStartSpeaking
                   )
                     window.speechSynthesis.cancel();
                   app.faceDetectionState = -2;
-                  speech('이탈. 위쪽으로 이동하시오.');
-                  app.faceDetectionStateCount = 0;
+                  faceRelocateVoice();
                 } else app.faceDetectionStateCount++;
               } else if (results.multiFaceLandmarks[0][234].x <= app.faceLeft) {
                 console.log('Face Out Direction: Right');
                 if (app.faceDetectionState !== -3) {
                   if (
                     app.faceDetectionState !== 1 ||
-                    !app.isHandDetectionSpeaking
+                    !app.isHandDetectionSpeaking ||
+                    !app.isFaceDetectStartSpeaking
                   ) {
                     window.speechSynthesis.cancel();
                     app.faceDetectionState = -3;
-                    speech('이탈. 왼쪽으로 이동하시오.');
-                    app.faceDetectionStateCount = 0;
+                    faceRelocateVoice();
                   }
                 } else app.faceDetectionStateCount++;
               } else if (
@@ -417,12 +426,12 @@ export class App {
                 if (app.faceDetectionState !== -4) {
                   if (
                     app.faceDetectionState !== 1 ||
-                    !app.isHandDetectionSpeaking
+                    !app.isHandDetectionSpeaking ||
+                    !app.isFaceDetectStartSpeaking
                   )
                     window.speechSynthesis.cancel();
                   app.faceDetectionState = -4;
-                  speech('이탈. 오른쪽으로 이동하시오.');
-                  app.faceDetectionStateCount = 0;
+                  faceRelocateVoice();
                 } else app.faceDetectionStateCount++;
               } else if (
                 results.multiFaceLandmarks[0][10].y > app.faceUp &&
@@ -432,15 +441,17 @@ export class App {
               ) {
                 console.log('Face in Normal Range');
                 if (app.faceDetectionState !== 0) {
-                  if (app.faceDetectionState !== 1)
+                  if (
+                    app.faceDetectionState !== 1 ||
+                    !app.isFaceDetectStartSpeaking
+                  )
                     window.speechSynthesis.cancel();
                   app.faceDetectionState = 0;
-                  speech('정상 범위에 들어왔습니다.');
-                  app.faceDetectionStateCount = 0;
+                  faceRelocateVoice();
                 }
               }
 
-              app.isHandDetectionSpeaking = false;
+              if (!Mobile()) app.isHandDetectionSpeaking = false;
             } else if (
               ((app.isInWaitroom && app.waitroomCameraOn) ||
                 (!app.isInWaitroom && app.camerastate)) &&
@@ -452,37 +463,54 @@ export class App {
               if (app.faceDetectionState !== -100) {
                 if (
                   app.faceDetectionState !== 1 ||
-                  !app.isHandDetectionSpeaking
+                  !app.isHandDetectionSpeaking ||
+                  !app.isFaceDetectStartSpeaking
                 )
                   window.speechSynthesis.cancel();
                 app.faceDetectionState = -100;
-                app.isHandDetectionSpeaking = false;
                 speech('얼굴이 화면 밖으로 완전히 벗어났습니다.');
-                speech('앵글 범위를 찾기 위해 손을 천천히 흔들어보세요');
+
+                if (!Mobile()) {
+                  app.isHandDetectionSpeaking = false;
+                  speech('정상 범위를 찾기 위해 손을 천천히 흔들어 주세요.');
+                } else {
+                  speech(
+                    '정상 범위를 찾기 위해 휴대폰을 천천히 움직여 주세요.'
+                  );
+                }
                 app.faceDetectionStateCount = -25;
               } else {
                 app.faceDetectionStateCount++;
-
-                if (app.isHandIn) {
-                  console.log('Face Total out & Hand in');
-                  if (!app.isHandDetectionSpeaking) {
-                    app.isHandDetectionSpeaking = true;
-                    if (app.faceDetectionState !== 1)
-                      window.speechSynthesis.cancel();
-                    speech(
-                      '손이 화면에 들어왔습니다. 손의 위치로 얼굴을 이동해주세요'
-                    );
-                    setTimeout(function () {
-                      app.isHandDetectionSpeaking = false;
-                    }, 25000);
+                if (!Mobile()) {
+                  if (app.isHandIn) {
+                    console.log('Face Total out & Hand in');
+                    if (!app.isHandDetectionSpeaking) {
+                      app.isHandDetectionSpeaking = true;
+                      if (
+                        app.faceDetectionState !== 1 ||
+                        !app.isFaceDetectStartSpeaking
+                      )
+                        window.speechSynthesis.cancel();
+                      speech(
+                        '손이 감지되었습니다. 현재 손의 위치로 얼굴을 이동해주세요'
+                      );
+                      setTimeout(function () {
+                        app.isHandDetectionSpeaking = false;
+                      }, 25000);
+                    }
                   }
                 }
               }
             }
             if (app.faceDetectionStateCount == 25) {
-              speech('아직 정상 범위에 들어오지 않았습니다');
+              speech('아직 정상 범위에 들어오지 않았습니다.');
               if (app.faceDetectionState == -100) {
-                speech('앵글 범위를 찾기 위해 손을 천천히 흔들어보세요');
+                if (!Mobile())
+                  speech('정상 범위를 찾기 위해 손을 천천히 흔들어 주세요.');
+                else
+                  speech(
+                    '정상 범위를 찾기 위해 핸드폰을 천천히 움직여 주세요.'
+                  );
                 app.faceDetectionStateCount = -25;
               } else {
                 faceRelocateVoice();
@@ -492,7 +520,15 @@ export class App {
           }
         },
 
-        isLipMagnify: function () {},
+        isLipMagnify: function () {
+          var lips_area = document.getElementById('lips-area');
+
+          if ($(document.getElementById('libMagnify')).prop('checked')) {
+            lips_area.style.display = 'inline';
+          } else {
+            lips_area.style.display = 'none';
+          }
+        },
       },
     });
   }
@@ -507,7 +543,7 @@ export class App {
         window.speechSynthesis.cancel();
         console.log('Video Loading...');
         count++;
-        if (count == 15) {
+        if (count == 17) {
           clearInterval(app.videoLoadingInterval);
           app.isVideoLoading = false;
           console.log('Video Loading Complete');
@@ -794,7 +830,7 @@ export class App {
     if ($(document.getElementById('participantAlarm')).prop('checked')) {
       setTimeout(() => {
         TTS.playSound(TTS.newpartnersound, this.partners[partnerId].name);
-      }, 2000);
+      }, 3500);
     }
 
     $('#lip-area').append(
@@ -937,7 +973,7 @@ export class App {
 
   hangOut() {
     if (!this.closed) {
-      history.back();
+      location.href = 'https://moayoung-call.web.app/';
 
       this.closed = true;
       this.exchange.sendMessage({ closing: this.yourId });

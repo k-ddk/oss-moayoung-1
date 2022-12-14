@@ -47,15 +47,6 @@
         minTrackingConfidence: 0.5,
       });
       var interval = null;
-      function check(input) {
-        var lips_area = document.getElementById('lips-area');
-
-        if (input.checked == true) {
-          lips_area.style.display = 'inline';
-        } else {
-          lips_area.style.display = 'none';
-        }
-      }
 
       function libSelect() {
         var delay = 0;
@@ -159,10 +150,14 @@
         var filename = '모아영 ' + timestamp + ' ' + roomname + '.txt';
         var hiddenElement = document.createElement('a');
         var str = $('.subtitles').text();
-        hiddenElement.href = 'data:attachment/text,' + encodeURI(str);
-        hiddenElement.target = '_blank';
-        hiddenElement.download = filename;
-        hiddenElement.click();
+        if (!str) {
+          alert('아직 생성된 자막이 없습니다!');
+        } else {
+          hiddenElement.href = 'data:text/plain,' + encodeURI(str);
+          hiddenElement.target = '_blank';
+          hiddenElement.download = filename;
+          hiddenElement.click();
+        }
       }
     </script>
   </head>
@@ -472,8 +467,7 @@
                       <input
                         type="checkbox"
                         id="libMagnify"
-                        onclick="check(this)"
-                        v-on:click="isLipMagnify"
+                        v-on:click="isLipMagnify()"
                       />
                       <span class="slider round"></span>
                     </label>
